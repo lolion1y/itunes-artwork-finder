@@ -141,6 +141,16 @@ a {
   flex-wrap: wrap;
 }
 
+#thanks {
+  margin: 4em 3em 2em;
+  text-align: center;
+  font-size: 9pt;
+}
+
+#thanks a {
+  display: block;
+}
+
 .result {
   flex-basis: 20%;
   box-sizing: border-box;
@@ -474,7 +484,15 @@ async function onload() {
         ${buildSelectRow('entity', 'Media type:', entities, entity)}
       </table>
     </div>
-  </form><div id="results"></div>`
+  </form>
+  <div id="results"></div>
+  <details id="thanks">
+    <summary>Acknowledgements</summary>
+    <a href="https://bendodson.com/projects/apple-music-artwork-finder/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Apple Music Artwork Finder</a>
+    <a href="https://bendodson.com/projects/itunes-artwork-finder/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">iTunes Artwork Finder</a>
+    <a href="https://bendodson.com/projects/apple-tv-movies-artwork-finder/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Apple TV Shows &amp; Movies Artwork Finder</a>
+    <a href="https://bendodson.com/projects/apple-tv-movies-artwork-finder/pre-ios26/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">16:9 Apple TV Shows &amp; Movies Artwork Finder</a>
+  </details>`
 
   updateThemeToggle()
 
