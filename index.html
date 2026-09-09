@@ -2,10 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>iTunes Artwork Finder</title>
     <style type="text/css">
+:root {
+  color-scheme: light;
+  --accent: #0D77FA;
+  --page-background: #fff;
+  --page-text: #111;
+  --link: #0645ad;
+  --control-background: #fff;
+  --control-border: #aaa;
+  --artwork-background: #f0f0f0;
+  --resource-background: #333;
+  --resource-text: #fff;
+  --resource-hover-background: #fff;
+  --resource-hover-text: #333;
+  --progress: #ddd;
+}
+
+@media(prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --page-background: #121212;
+    --page-text: #eee;
+    --link: #76a9ff;
+    --control-background: #1e1e1e;
+    --control-border: #666;
+    --artwork-background: #242424;
+    --resource-background: #e3e3e3;
+    --resource-text: #161616;
+    --resource-hover-background: #4a4a4a;
+    --resource-hover-text: #fff;
+    --progress: #666;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page-background: #121212;
+  --page-text: #eee;
+  --link: #76a9ff;
+  --control-background: #1e1e1e;
+  --control-border: #666;
+  --artwork-background: #242424;
+  --resource-background: #e3e3e3;
+  --resource-text: #161616;
+  --resource-hover-background: #4a4a4a;
+  --resource-hover-text: #fff;
+  --progress: #666;
+}
+
 body {
   font-family: Helvetica, Arial, sans-serif;
+  background: var(--page-background);
+  color: var(--page-text);
+}
+
+a {
+  color: var(--link);
 }
 
 #corner {
@@ -13,6 +68,27 @@ body {
   position: absolute;
   top: 1em;
   left: 1em;
+}
+
+#themeToggle,
+#searchForm input[name=term],
+#options select {
+  background: var(--control-background);
+  color: var(--page-text);
+}
+
+#themeToggle {
+  display: block;
+  margin-top: 0.75em;
+  padding: 0.4em 0.6em;
+  border: 1px solid var(--control-border);
+  border-radius: 0.35em;
+  font: inherit;
+  cursor: pointer;
+}
+
+#themeToggle:hover, #themeToggle:focus-visible {
+  border-color: var(--accent);
 }
 
 #searchForm {
@@ -28,7 +104,7 @@ body {
   font-size: 18pt;
   margin: 0;
   padding: 0.5em;
-  border: 2px solid #0D77FA;
+  border: 2px solid var(--accent);
   font-weight: bold;
 }
 
@@ -41,7 +117,7 @@ body {
 #searchForm input[type=submit] {
   width: 20%;
   border-left: 0;
-  background: #0D77FA;
+  background: var(--accent);
   color: #fff;
   border-radius: 0 0.5em 0.5em 0;
 }
@@ -55,6 +131,7 @@ body {
 
 #options select {
   width: 20em;
+  border-color: var(--control-border);
 }
 
 #results {
@@ -72,6 +149,10 @@ body {
 }
 
 @media(max-width: 1000px) {
+  #searchForm {
+    margin-top: 5em;
+  }
+
   .result {
     flex-basis: 33.3%;
   }
@@ -91,6 +172,7 @@ body {
   position: relative;
   width: 100%;
   padding-bottom: 100%;
+  background: var(--artwork-background);
 }
 
 .result .artwork img {
@@ -100,18 +182,20 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  background: #f0f0f0;
+  object-fit: contain;
+  object-position: center;
 }
 
 .result .links {
   position: absolute;
   bottom: 0;
+  left: 0;
+  right: 0;
   visibility: hidden;
   font-size: 8pt;
 }
 
-.result:hover .links {
+.result:hover .links, .result:focus-within .links {
   visibility: visible;
 }
 
@@ -119,15 +203,15 @@ body {
   display: block;
   float: left;
   padding: 0.5em;
-  color: #fff;
-  background: #333;
+  color: var(--resource-text);
+  background: var(--resource-background);
   font-weight: bold;
   text-decoration: none;
 }
 
 .result .links a:hover {
-  background: #fff;
-  color: #333;
+  background: var(--resource-hover-background);
+  color: var(--resource-hover-text);
 }
 
 #error, #progress {
@@ -137,16 +221,53 @@ body {
   font-weight: bold;
 }
 
-#error {
-  color: #000;
-}
-
 #progress {
-  color: #ddd;
+  color: var(--progress);
 }
     </style>
     <script type="text/javascript">
 'use strict'
+
+const themeCookieName = 'preferred-theme'
+const themeModes = ['auto', 'light', 'dark']
+let preferredTheme = readPreferredTheme()
+
+function readPreferredTheme() {
+  const prefix = `${themeCookieName}=`
+  const cookie = document.cookie.split(';').map(value => value.trim()).find(value => value.startsWith(prefix))
+  const theme = cookie ? cookie.slice(prefix.length) : 'auto'
+  return themeModes.includes(theme) ? theme : 'auto'
+}
+
+function applyTheme() {
+  if (preferredTheme === 'auto') {
+    document.documentElement.removeAttribute('data-theme')
+  } else {
+    document.documentElement.setAttribute('data-theme', preferredTheme)
+  }
+}
+
+function updateThemeToggle() {
+  const button = document.getElementById('themeToggle')
+  if (!button) {
+    return
+  }
+
+  const label = preferredTheme[0].toUpperCase() + preferredTheme.slice(1)
+  button.textContent = `Theme: ${label}`
+  button.setAttribute('aria-label', `Theme: ${label}. Activate to change theme.`)
+}
+
+function toggleTheme() {
+  const nextTheme = themeModes[(themeModes.indexOf(preferredTheme) + 1) % themeModes.length]
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  preferredTheme = nextTheme
+  document.cookie = `${themeCookieName}=${preferredTheme}; Max-Age=31536000; Path=/; SameSite=Lax${secure}`
+  applyTheme()
+  updateThemeToggle()
+}
+
+applyTheme()
 
 const countries = Object.freeze({
   ae: 'United Arab Emirates',   ag: 'Antigua and Barbuda',              ai: 'Anguilla',
@@ -223,12 +344,6 @@ function buildUrl(term, entity, country) {
   const urlSearchParams = new URLSearchParams()
   urlSearchParams.set('country', country)
   urlSearchParams.set('limit', 25)
-  if (entity == 'shortFilm') {
-    urlSearchParams.set('entity', 'movie')
-    urlSearchParams.set('attribute', 'shortFilmTerm')
-  } else {
-    urlSearchParams.set('entity', entity)
-  }
 
   let baseUrl
   switch (entity) {
@@ -240,10 +355,91 @@ function buildUrl(term, entity, country) {
     default: {
       baseUrl = 'https://itunes.apple.com/search'
       urlSearchParams.set('term', term)
+      if (entity == 'shortFilm') {
+        urlSearchParams.set('entity', 'movie')
+        urlSearchParams.set('attribute', 'shortFilmTerm')
+      } else {
+        urlSearchParams.set('entity', entity)
+      }
     } break
   }
 
   return `${baseUrl}?${urlSearchParams}`
+}
+
+function buildArtwork(result, entity) {
+  const artworkUrl100 = result['artworkUrl100'].replace(/^http:/, 'https:')
+  const artwork = {
+    title: entity === 'album' || entity === 'idAlbum' ? `${result['artistName']} - ${result['collectionName']}` : (result['collectionName'] || result['trackName']),
+    urls: {},
+    hires: null,
+    uncompressed: null,
+    width: 600,
+    height: 600
+  }
+
+  for (const size of [300, 600, 1200, 5000]) {
+    artwork.urls[size] = artworkUrl100.replace('100x100', `${size}x${size}`)
+  }
+
+  if (entity === 'album' || entity === 'idAlbum') {
+    const parts = new URL(artworkUrl100).pathname.split('/image/thumb/')
+    if (parts.length === 2) {
+      const path = parts[1].split('/')
+      path.pop()
+      if (path.length > 0) {
+        artwork.uncompressed = `https://a5.mzstatic.com/us/r1000/0/${path.join('/')}`
+      }
+    }
+  }
+
+  switch (entity) {
+    case 'movie':
+    case 'id':
+    case 'shortFilm':
+    case 'ebook': {
+      artwork.width = 400
+    } break
+    case 'musicVideo': {
+      artwork.width = 640
+      artwork.height = 464
+    } break
+    case 'software':
+    case 'iPadSoftware':
+    case 'macSoftware': {
+      artwork.width = 512
+      artwork.height = 512
+      if (result['artworkUrl512']) {
+        artwork.hires = result['artworkUrl512'].replace(/^http:/, 'https:').replace('512x512bb', '1024x1024bb')
+      }
+    } break
+  }
+
+  return artwork
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function buildSelectRow(id, label, options, selectedValue) {
+  const optionHtml = Object.entries(options).map(([value, text]) =>
+    `<option value="${escapeHtml(value)}"${value === selectedValue ? ' selected' : ''}>${escapeHtml(text)}</option>`
+  ).join('')
+
+  return `<tr>
+    <td><label for="${escapeHtml(id)}">${escapeHtml(label)}</label></td>
+    <td><select id="${escapeHtml(id)}" name="${escapeHtml(id)}">${optionHtml}</select></td>
+  </tr>`
+}
+
+function buildErrorHtml(content) {
+  return `<div id="error">${content}</div>`
 }
 
 async function fetchResults(term, entity, country) {
@@ -264,30 +460,23 @@ async function onload() {
 
   document.body.innerHTML = `
     <div id="corner">
-      <a href="https://github.com/tzahola/itunes-artwork-finder">Fork on GitHub</a><br/>
-      <a href="Find%20iTunes%20Artwork.workflow.zip">Integrate into macOS Automator</a>
+      <a href="https://github.com/tzahola/itunes-artwork-finder" rel="noreferrer" referrerpolicy="no-referrer">Fork on GitHub</a><br/>
+      <a href="Find%20iTunes%20Artwork.workflow.zip" rel="noreferrer" referrerpolicy="no-referrer">Integrate into macOS Automator</a>
+      <button id="themeToggle" type="button" onclick="toggleTheme()"></button>
     </div>
     <form id="searchForm" method="GET">
     <div id="searchField">
       <h1>iTunes Artwork Finder</h1>
-      <input type="text" name="term" value="${term || ""}" placeholder="Enter search term here" /><input type="submit" value="Search" /></div>
+      <input type="text" name="term" value="${escapeHtml(term)}" placeholder="Enter search term here" /><input type="submit" value="Search" /></div>
     <div id="options">
       <table>
-        <tr>
-          <td><label for="country">iTunes Store Country:</label></td>
-          <td><select name="country">${ 
-            Object.keys(countries).map(c => `<option value="${c}" ${c === country ? "selected" : ""}>${countries[c]}</option>`).join('')
-          }</select></td>
-        </tr>
-        <tr>
-          <td><label for="country">Media type:</label></td>
-          <td><select name="entity">${ 
-            Object.keys(entities).map(e => `<option value="${e}" ${e === entity ? "selected" : ""}>${entities[e]}</option>`).join('')
-          }</select></td>
-        </tr>
+        ${buildSelectRow('country', 'iTunes Store Country:', countries, country)}
+        ${buildSelectRow('entity', 'Media type:', entities, entity)}
       </table>
     </div>
   </form><div id="results"></div>`
+
+  updateThemeToggle()
 
   if (term == null || term.length == 0) {
     return
@@ -307,27 +496,29 @@ async function onload() {
   }
 
   if (results == null) {
-    resultsDiv.innerHTML = `<div id="error"><p>Sorry, some error occured while loading the results...</p>${error !== null ? `<p>(${error})</p>` : ""}</div>`
+    const errorDetails = error ? `<p>(${escapeHtml(error)})</p>` : ''
+    resultsDiv.innerHTML = buildErrorHtml(`<p>Sorry, some error occurred while loading the results...</p>${errorDetails}`)
   } else {
     const resultItems = results["results"]
     if (resultItems === null || !Array.isArray(resultItems) || resultItems.length === 0) {
-      resultsDiv.innerHTML = `<div id="error">Sorry, no results.</div>`
+      resultsDiv.innerHTML = buildErrorHtml('Sorry, no results.')
     } else {
       resultsDiv.innerHTML = `${resultItems.map(result => {
-        const artworkUrl100 = result["artworkUrl100"]
-        const artworkUrl300 = artworkUrl100.replace('100x100', '300x300')
-        const artworkUrl600 = artworkUrl100.replace('100x100', '600x600')
-        const artworkUrl1200 = artworkUrl100.replace('100x100', '1200x1200')
-        const artworkUrl5000 = artworkUrl100.replace('100x100', '5000x5000')
-        
-        const title = entity === 'album' ? `${result['artistName']} - ${result['collectionName']}` : (result['collectionName'] || result['trackName'])
+        const artwork = buildArtwork(result, entity)
+        const title = escapeHtml(artwork.title)
+        const links = [600, 1200, 5000].map(size => ({ url: artwork.urls[size], title: size }))
+        if (artwork.hires) {
+          links.push({ url: artwork.hires, title: 'High Res' })
+        }
+        if (artwork.uncompressed) {
+          links.push({ url: artwork.uncompressed, title: 'Orig' })
+        }
+
         return `<div class="result">
           <div class="artwork">
-            <img src="${artworkUrl300}" />
+            <img src="${escapeHtml(artwork.urls[300])}" alt="iTunes Artwork for '${title}'" width="${artwork.width}" height="${artwork.height}" />
             <div class="links">
-              <a href="${artworkUrl600}" target="_blank">600</a>
-              <a href="${artworkUrl1200}" target="_blank">1200</a>
-              <a href="${artworkUrl5000}" target="_blank">5000</a>
+              ${links.map(link => `<a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" download="${title}">${link.title}</a>`).join('')}
             </div>
           </div>
           <h2>${title}</h2>
